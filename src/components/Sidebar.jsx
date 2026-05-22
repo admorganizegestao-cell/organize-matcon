@@ -7,7 +7,7 @@ const menu = [
   { id: 'painel', label: 'Painel do Dono' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ modulo, setModulo }) {
   return (
     <aside style={{
       width: '220px',
@@ -24,12 +24,17 @@ export default function Sidebar() {
       </div>
       <nav style={{ marginTop: '16px' }}>
         {menu.map(item => (
-          <div key={item.id} style={{
-            padding: '10px 20px',
-            color: 'var(--textSub)',
-            cursor: 'pointer',
-            fontSize: '14px',
-          }}>
+          <div key={item.id}
+            onClick={() => setModulo(item.id)}
+            style={{
+              padding: '10px 20px',
+              color: modulo === item.id ? 'var(--verde)' : 'var(--textSub)',
+              background: modulo === item.id ? 'var(--verdeDim)' : 'transparent',
+              borderLeft: modulo === item.id ? '2px solid var(--verde)' : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.15s',
+            }}>
             {item.label}
           </div>
         ))}
