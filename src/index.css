@@ -33,3 +33,11 @@ body {
 .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
+@media print {
+  aside { display: none !important; }
+  header { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: white !important; color: black !important; }
+  table { font-size: 11px !important; }
+  button { display: none !important; }
+}
