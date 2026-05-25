@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import DRE from './components/DRE'
 import BP from './components/BP'
+import DFC from './components/DFC'
 
 function App() {
   const [modulo, setModulo] = useState('dre')
@@ -19,7 +20,8 @@ function App() {
         <main style={{ flex: 1, padding: '24px', color: 'var(--text)' }}>
           {modulo === 'dre' && <DRE competencia={competencia} />}
           {modulo === 'bp' && <BP competencia={competencia} />}
-          {modulo !== 'dre' && modulo !== 'bp' && (
+          {modulo === 'dfc' && <DFC competencia={competencia} />}
+          {!['dre','bp','dfc'].includes(modulo) && (
             <p style={{ color: 'var(--textSub)' }}>Módulo em construção.</p>
           )}
         </main>
