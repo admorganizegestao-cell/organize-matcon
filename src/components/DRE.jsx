@@ -135,7 +135,7 @@ export default function DRE({ competencia }) {
   const base = receitaLiquida
 
   return (
-    <div style={{ maxWidth: '1000px' }}>
+    <div style={{ maxWidth: '100%' }}>
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)' }}>

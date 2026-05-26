@@ -80,7 +80,7 @@ export default function BP({ competencia }) {
   if (erro) return <div style={{ color: 'var(--danger)', padding: '24px' }}>{erro}</div>
 
   return (
-    <div style={{ maxWidth: '1000px' }}>
+    <div style={{ maxWidth: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)' }}>
           Balanço Patrimonial — {meses[competencia.mes - 1]}/{competencia.ano}

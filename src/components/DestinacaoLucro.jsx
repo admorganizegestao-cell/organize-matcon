@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 const fmt = (v) => {
   if (v === null || v === undefined || isNaN(v)) return '—'
@@ -107,21 +108,28 @@ export default function DestinacaoLucro({ competencia }) {
     { chave: 'outrasVariacoes', label: 'Outras variações de caixa', icone: '↕️', sinal: 1 },
   ]
 
-  const corValor = (v) => v >= 0 ? 'var(--verde)' : 'var(--danger)'
-  const barWidth = (v, max) => max === 0 ? 0 : Math.min(Math.abs(v) / Math.abs(max) * 100, 100)
-  const maxVal = Math.max(Math.abs(ebitda), Math.abs(caixaOperacional), Math.abs(variacaoRealCaixa), 1)
+  const dadosWaterfall = [
+    { name: 'EBITDA', valor: ebitda, cor: '#00A651' },
+    { name: '▲ CR', valor: -varCR, cor: varCR > 0 ? '#F04545' : '#00A651' },
+    { name: '▲ Estoque', valor: -varEstoque, cor: varEstoque > 0 ? '#F04545' : '#00A651' },
+    { name: '▲ Fornec.', valor: varFornecedores, cor: varFornecedores > 0 ? '#00A651' : '#F04545' },
+    { name: 'Cx. Op.', valor: caixaOperacional, cor: '#3B82F6' },
+    { name: 'Juros', valor: -juros, cor: '#F04545' },
+    { name: 'IR/CS', valor: -ir, cor: '#F04545' },
+    { name: 'Amort.', valor: -amortizacao, cor: '#F04545' },
+    { name: 'Imob.', valor: -imobilizado, cor: '#F04545' },
+    { name: 'Div.', valor: -dividendos, cor: '#F04545' },
+    { name: 'Variação', valor: variacaoRealCaixa, cor: variacaoRealCaixa >= 0 ? '#00A651' : '#F04545' },
+  ]
+
+  const tooltipStyle = { background: '#101828', border: '1px solid #1C2A40', borderRadius: '6px', color: '#E8EDF5', fontSize: '12px' }
 
   return (
-    <div style={{ maxWidth: '800px' }}>
-      {/* HEADER */}
+    <div style={{ width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>
-            Destinação do Lucro
-          </h2>
-          <div style={{ fontSize: '13px', color: 'var(--textSub)' }}>
-            {meses[competencia.mes - 1]}/{competencia.ano} — Reconciliação EBITDA → Caixa Real
-          </div>
+          <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>Destinação do Lucro</h2>
+          <div style={{ fontSize: '13px', color: 'var(--textSub)' }}>{meses[competencia.mes - 1]}/{competencia.ano} — Reconciliação EBITDA → Caixa Real</div>
         </div>
         <button onClick={() => window.print()}
           style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer', background: 'var(--card)', color: 'var(--textSub)' }}>
@@ -130,85 +138,99 @@ export default function DestinacaoLucro({ competencia }) {
       </div>
 
       {/* CARDS TOPO */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '11px', marginBottom: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '11px', marginBottom: '24px' }}>
         <CardTopo label="EBITDA do Mês" valor={ebitda} cor="var(--verde)" icone="📊" />
         <CardTopo label="Caixa Operacional" valor={caixaOperacional} cor="var(--accent)" icone="⚙️" />
         <CardTopo label="Variação Real de Caixa" valor={variacaoRealCaixa} cor={variacaoRealCaixa >= 0 ? 'var(--verde)' : 'var(--danger)'} icone="💵" />
       </div>
 
-      {/* BLOCO AUTOMÁTICO */}
-      <div style={{ background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '16px', overflow: 'hidden' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--textMuted)', letterSpacing: '1px' }}>RECONCILIAÇÃO AUTOMÁTICA</span>
-          <span style={{ fontSize: '10px', background: 'var(--verdeDim)', color: 'var(--verde)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--verde)' }}>calculado do BP e DRE</span>
-        </div>
+      {/* LAYOUT DUAS COLUNAS */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
 
-        <LinhaBloco label="(=) EBITDA do mês" valor={ebitda} barra={barWidth(ebitda, maxVal)} cor="var(--verde)" bold />
-        <LinhaBloco label="(-) Variação de Contas a Receber" valor={-varCR} barra={barWidth(varCR, maxVal)} cor="var(--warning)" />
-        <LinhaBloco label="(-) Variação de Estoques" valor={-varEstoque} barra={barWidth(varEstoque, maxVal)} cor="var(--warning)" />
-        <LinhaBloco label="(+) Variação de Fornecedores" valor={varFornecedores} barra={barWidth(varFornecedores, maxVal)} cor="var(--accent)" />
+        {/* COLUNA ESQUERDA — TABELA */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-        <div style={{ background: 'rgba(59,130,246,0.07)', borderTop: '2px solid var(--accent)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>(=) CAIXA OPERACIONAL GERADO</span>
-          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: '16px', color: corValor(caixaOperacional) }}>{fmt(caixaOperacional)}</span>
-        </div>
-      </div>
-
-      {/* BLOCO MANUAL */}
-      <div style={{ background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '16px', overflow: 'hidden' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--textMuted)', letterSpacing: '1px' }}>CONSUMO DO CAIXA — LANÇAMENTO MANUAL</span>
-        </div>
-
-        {manuaisLinhas.map(l => {
-          const valor = manuais[l.chave] || 0
-          const valorExibir = valor * l.sinal
-          const isEdit = editando === l.chave
-          return (
-            <div key={l.chave} style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--border)', gap: '12px' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <span style={{ fontSize: '16px' }}>{l.icone}</span>
-              <span style={{ flex: 1, color: 'var(--textSub)', fontSize: '13px' }}>
-                {l.sinal === -1 ? '(-) ' : '(+/-) '}{l.label}
-              </span>
-              {isEdit ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input autoFocus value={valorTemp} onChange={e => setValorTemp(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') salvarManual(l.chave); if (e.key === 'Escape') setEditando(null) }}
-                    style={{ background: 'var(--card)', border: '1px solid var(--verde)', borderRadius: '4px', color: 'var(--text)', padding: '4px 8px', fontSize: '13px', width: '120px', textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }} />
-                  <button onClick={() => salvarManual(l.chave)} style={{ background: 'var(--verde)', border: 'none', borderRadius: '4px', color: '#fff', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>✓</button>
-                  <button onClick={() => setEditando(null)} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--textSub)', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>✕</button>
-                </span>
-              ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', color: valorExibir >= 0 ? 'var(--text)' : 'var(--danger)', minWidth: '100px', textAlign: 'right' }}>
-                    {valor > 0 ? fmt(valorExibir) : '—'}
-                  </span>
-                  <button onClick={() => { setEditando(l.chave); setValorTemp(valor ? String(valor) : '') }}
-                    style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--textSub)', padding: '3px 10px', cursor: 'pointer', fontSize: '11px' }}>
-                    editar
-                  </button>
-                </span>
-              )}
+          {/* Bloco automático */}
+          <div style={{ background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--textMuted)', letterSpacing: '1px' }}>RECONCILIAÇÃO AUTOMÁTICA</span>
+              <span style={{ fontSize: '10px', background: 'var(--verdeDim)', color: 'var(--verde)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--verde)' }}>auto</span>
             </div>
-          )
-        })}
-      </div>
+            <LinhaBloco label="(=) EBITDA do mês" valor={ebitda} cor="var(--verde)" bold />
+            <LinhaBloco label="(-) Variação de Contas a Receber" valor={-varCR} cor="var(--warning)" />
+            <LinhaBloco label="(-) Variação de Estoques" valor={-varEstoque} cor="var(--warning)" />
+            <LinhaBloco label="(+) Variação de Fornecedores" valor={varFornecedores} cor="var(--accent)" />
+            <div style={{ background: 'rgba(59,130,246,0.07)', borderTop: '2px solid var(--accent)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>(=) CAIXA OPERACIONAL</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: '16px', color: caixaOperacional >= 0 ? 'var(--verde)' : 'var(--danger)' }}>{fmt(caixaOperacional)}</span>
+            </div>
+          </div>
 
-      {/* RESULTADO FINAL */}
-      <div style={{ background: variacaoRealCaixa >= 0 ? 'rgba(0,166,81,0.07)' : 'rgba(240,69,69,0.07)', borderRadius: '8px', border: `2px solid ${variacaoRealCaixa >= 0 ? 'var(--verde)' : 'var(--danger)'}`, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: '11px', color: 'var(--textMuted)', fontWeight: 600, letterSpacing: '1px', marginBottom: '4px' }}>RESULTADO FINAL</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>(=) VARIAÇÃO REAL DE CAIXA</div>
-        </div>
-        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: '28px', color: variacaoRealCaixa >= 0 ? 'var(--verde)' : 'var(--danger)' }}>
-          {fmt(variacaoRealCaixa)}
-        </div>
-      </div>
+          {/* Bloco manual */}
+          <div style={{ background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--textMuted)', letterSpacing: '1px' }}>CONSUMO DO CAIXA — MANUAL</span>
+            </div>
+            {manuaisLinhas.map(l => {
+              const valor = manuais[l.chave] || 0
+              const valorExibir = valor * l.sinal
+              const isEdit = editando === l.chave
+              return (
+                <div key={l.chave} style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--border)', gap: '12px' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <span style={{ fontSize: '16px' }}>{l.icone}</span>
+                  <span style={{ flex: 1, color: 'var(--textSub)', fontSize: '13px' }}>{l.sinal === -1 ? '(-) ' : '(+/-) '}{l.label}</span>
+                  {isEdit ? (
+                    <span style={{ display: 'flex', gap: '6px' }}>
+                      <input autoFocus value={valorTemp} onChange={e => setValorTemp(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') salvarManual(l.chave); if (e.key === 'Escape') setEditando(null) }}
+                        style={{ background: 'var(--card)', border: '1px solid var(--verde)', borderRadius: '4px', color: 'var(--text)', padding: '4px 8px', fontSize: '13px', width: '110px', textAlign: 'right', fontFamily: 'JetBrains Mono, monospace' }} />
+                      <button onClick={() => salvarManual(l.chave)} style={{ background: 'var(--verde)', border: 'none', borderRadius: '4px', color: '#fff', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>✓</button>
+                      <button onClick={() => setEditando(null)} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--textSub)', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                    </span>
+                  ) : (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', color: valorExibir >= 0 ? 'var(--text)' : 'var(--danger)', minWidth: '90px', textAlign: 'right' }}>
+                        {valor > 0 ? fmt(valorExibir) : '—'}
+                      </span>
+                      <button onClick={() => { setEditando(l.chave); setValorTemp(valor ? String(valor) : '') }}
+                        style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--textSub)', padding: '3px 10px', cursor: 'pointer', fontSize: '11px' }}>
+                        editar
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
 
-      <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--textMuted)' }}>
-        💡 Valores automáticos calculados a partir do BP e DRE de {meses[competencia.mes - 1]}/{competencia.ano}.
+          {/* Resultado final */}
+          <div style={{ background: variacaoRealCaixa >= 0 ? 'rgba(0,166,81,0.07)' : 'rgba(240,69,69,0.07)', borderRadius: '8px', border: `2px solid ${variacaoRealCaixa >= 0 ? 'var(--verde)' : 'var(--danger)'}`, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--textMuted)', fontWeight: 600, letterSpacing: '1px', marginBottom: '4px' }}>RESULTADO FINAL</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>(=) VARIAÇÃO REAL DE CAIXA</div>
+            </div>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: '26px', color: variacaoRealCaixa >= 0 ? 'var(--verde)' : 'var(--danger)' }}>
+              {fmt(variacaoRealCaixa)}
+            </div>
+          </div>
+        </div>
+
+        {/* COLUNA DIREITA — GRÁFICO */}
+        <div style={{ background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', padding: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--textMuted)', letterSpacing: '1px', marginBottom: '16px' }}>CASCATA — DO EBITDA AO CAIXA REAL</div>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={dadosWaterfall} margin={{ top: 0, right: 0, left: 0, bottom: 40 }}>
+              <XAxis dataKey="name" tick={{ fill: '#6B7FA3', fontSize: 10 }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" />
+              <YAxis hide />
+              <Tooltip contentStyle={{ background: '#101828', border: '1px solid #1C2A40', borderRadius: '6px', color: '#E8EDF5', fontSize: '12px' }} formatter={(v) => fmt(v)} />
+              <Bar dataKey="valor" radius={[4,4,0,0]}>
+                {dadosWaterfall.map((e, i) => <Cell key={i} fill={e.cor} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   )
@@ -226,16 +248,11 @@ function CardTopo({ label, valor, cor, icone }) {
   )
 }
 
-function LinhaBloco({ label, valor, barra, cor, bold }) {
+function LinhaBloco({ label, valor, cor, bold }) {
   return (
-    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-        <span style={{ color: bold ? 'var(--text)' : 'var(--textSub)', fontSize: '13px', fontWeight: bold ? 600 : 400 }}>{label}</span>
-        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', color: valor >= 0 ? 'var(--text)' : 'var(--danger)', fontWeight: bold ? 700 : 400 }}>{fmt(valor)}</span>
-      </div>
-      <div style={{ height: '3px', background: 'var(--border)', borderRadius: '2px', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${barra}%`, background: cor, borderRadius: '2px', transition: 'width 0.3s' }} />
-      </div>
+    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ color: bold ? 'var(--text)' : 'var(--textSub)', fontSize: '13px', fontWeight: bold ? 600 : 400 }}>{label}</span>
+      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', color: valor >= 0 ? 'var(--text)' : 'var(--danger)', fontWeight: bold ? 700 : 400 }}>{fmt(valor)}</span>
     </div>
   )
 }
