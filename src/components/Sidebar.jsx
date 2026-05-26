@@ -3,7 +3,7 @@ const menu = [
   { id: 'bp', label: 'Balanço Patrimonial', fase: 1 },
   { id: 'dfc', label: 'Fluxo de Caixa', fase: 1 },
   { id: 'ciclo', label: 'Ciclo de Caixa / NCG', fase: 1 },
-  { id: 'lucro', label: 'Para Onde Foi o Lucro', fase: 1 },
+  { id: 'lucro', label: 'Destinação do Lucro', fase: 1 },
   { id: 'painel', label: 'Painel do Dono', fase: 1 },
   { id: 'despesas', label: 'Análise de Despesas', fase: 1 },
   { id: 'diagnostico', label: 'Diagnóstico Financeiro', fase: 2 },
@@ -27,13 +27,11 @@ export default function Sidebar({ modulo, setModulo }) {
       flexDirection: 'column',
       padding: '24px 0',
     }}>
-      {/* LOGO */}
       <div style={{ padding: '0 20px 24px', borderBottom: '1px solid var(--border)' }}>
         <span style={{ color: 'var(--verde)', fontWeight: 700, fontSize: '16px' }}>Organize</span>
         <span style={{ color: 'var(--textSub)', fontSize: '12px', display: 'block' }}>MatCon — E&M Carvalho</span>
       </div>
 
-      {/* FASE 1 */}
       <div style={{ marginTop: '16px' }}>
         <div style={{ padding: '6px 20px', fontSize: '10px', color: 'var(--textMuted)', fontWeight: 600, letterSpacing: '1px' }}>
           FASE 1 — GERENCIAL
@@ -43,7 +41,6 @@ export default function Sidebar({ modulo, setModulo }) {
         ))}
       </div>
 
-      {/* FASE 2 */}
       <div style={{ marginTop: '16px' }}>
         <div style={{ padding: '6px 20px', fontSize: '10px', color: 'var(--textMuted)', fontWeight: 600, letterSpacing: '1px' }}>
           FASE 2 — OPERACIONAL
@@ -53,7 +50,6 @@ export default function Sidebar({ modulo, setModulo }) {
         ))}
       </div>
 
-      {/* RODAPÉ */}
       <div style={{ marginTop: 'auto', padding: '16px 20px', borderTop: '1px solid var(--border)' }}>
         <span style={{ color: 'var(--textMuted)', fontSize: '11px' }}>Organize Consultoria</span>
         <span style={{ color: 'var(--textMuted)', fontSize: '10px', display: 'block' }}>v1.0 — 2026</span>

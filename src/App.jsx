@@ -5,6 +5,7 @@ import DRE from './components/DRE'
 import BP from './components/BP'
 import DFC from './components/DFC'
 import CicloCaixa from './components/CicloCaixa'
+import DestinacaoLucro from './components/DestinacaoLucro'
 
 function App() {
   const [modulo, setModulo] = useState('dre')
@@ -23,7 +24,8 @@ function App() {
           {modulo === 'bp' && <BP competencia={competencia} />}
           {modulo === 'dfc' && <DFC competencia={competencia} />}
           {modulo === 'ciclo' && <CicloCaixa competencia={competencia} />}
-          {!['dre','bp','dfc','ciclo'].includes(modulo) && (
+          {modulo === 'lucro' && <DestinacaoLucro competencia={competencia} />}
+          {!['dre','bp','dfc','ciclo','lucro'].includes(modulo) && (
             <p style={{ color: 'var(--textSub)' }}>Módulo em construção.</p>
           )}
         </main>
