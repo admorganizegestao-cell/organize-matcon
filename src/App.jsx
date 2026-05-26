@@ -7,6 +7,7 @@ import DFC from './components/DFC'
 import CicloCaixa from './components/CicloCaixa'
 import DestinacaoLucro from './components/DestinacaoLucro'
 import PainelDono from './components/PainelDono'
+import AnaliseDespesas from './components/AnaliseDespesas'
 
 function App() {
   const [modulo, setModulo] = useState('dre')
@@ -27,7 +28,8 @@ function App() {
           {modulo === 'ciclo' && <CicloCaixa competencia={competencia} />}
           {modulo === 'lucro' && <DestinacaoLucro competencia={competencia} />}
           {modulo === 'painel' && <PainelDono competencia={competencia} />}
-          {!['dre','bp','dfc','ciclo','lucro','painel'].includes(modulo) && (
+          {modulo === 'despesas' && <AnaliseDespesas competencia={competencia} />}
+          {!['dre','bp','dfc','ciclo','lucro','painel','despesas'].includes(modulo) && (
             <p style={{ color: 'var(--textSub)' }}>Módulo em construção.</p>
           )}
         </main>
