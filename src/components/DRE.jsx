@@ -123,19 +123,13 @@ export default function DRE({ competencia }) {
   const lucroLiquido = ebitda - financeiro + complementar
   const totalExtras = extras.reduce((acc, e) => acc + parseFloat(e.valor || 0), 0)
   const resultadoDisponivel = lucroLiquido - totalExtras
-
-  function imprimirPDF() {
-    window.print()
-  }
+  const base = receitaLiquida
 
   if (loading) return <div style={{ color: 'var(--textSub)', padding: '24px' }}>Carregando DRE...</div>
   if (erro) return <div style={{ color: 'var(--danger)', padding: '24px' }}>{erro}</div>
 
-  const thStyle = { textAlign: 'right', color: 'var(--textMuted)', padding: '6px 8px', fontWeight: 500, fontSize: '12px' }
-  const base = receitaLiquida
-
   return (
-    <div style={{ maxWidth: '100%' }}>
+    <div style={{ width: '100%' }}>
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text)' }}>
@@ -143,18 +137,15 @@ export default function DRE({ competencia }) {
         </h2>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button onClick={() => setVisao('sintetica')}
-            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer',
-              background: visao === 'sintetica' ? 'var(--verde)' : 'var(--card)', color: visao === 'sintetica' ? '#fff' : 'var(--textSub)' }}>
+            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer', background: visao === 'sintetica' ? 'var(--verde)' : 'var(--card)', color: visao === 'sintetica' ? '#fff' : 'var(--textSub)' }}>
             Síntese
           </button>
           <button onClick={() => setVisao('analitica')}
-            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer',
-              background: visao === 'analitica' ? 'var(--verde)' : 'var(--card)', color: visao === 'analitica' ? '#fff' : 'var(--textSub)' }}>
+            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer', background: visao === 'analitica' ? 'var(--verde)' : 'var(--card)', color: visao === 'analitica' ? '#fff' : 'var(--textSub)' }}>
             Analítica
           </button>
-          <button onClick={imprimirPDF}
-            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer',
-              background: 'var(--card)', color: 'var(--textSub)' }}>
+          <button onClick={() => window.print()}
+            style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer', background: 'var(--card)', color: 'var(--textSub)' }}>
             🖨️ PDF
           </button>
         </div>
@@ -164,10 +155,10 @@ export default function DRE({ competencia }) {
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
             <th style={{ textAlign: 'left', color: 'var(--textMuted)', padding: '6px 8px', fontWeight: 500, fontSize: '12px' }}>CONTA</th>
-            <th style={thStyle}>VALOR</th>
-            <th style={thStyle}>% RL</th>
-            <th style={thStyle}>META</th>
-            <th style={thStyle}>Δ META</th>
+            <th style={{ textAlign: 'right', color: 'var(--textMuted)', padding: '6px 8px', fontWeight: 500, fontSize: '12px' }}>VALOR</th>
+            <th style={{ textAlign: 'right', color: 'var(--textMuted)', padding: '6px 8px', fontWeight: 500, fontSize: '12px' }}>% RL</th>
+            <th style={{ textAlign: 'right', color: 'var(--textMuted)', padding: '6px 8px', fontWeight: 500, fontSize: '12px' }}>META</th>
+            <th style={{ textAlign: 'right', color: 'var(--textMuted)', padding: '6px 8px', fontWeight: 500, fontSize: '12px' }}>Δ META</th>
           </tr>
         </thead>
         <tbody>
@@ -177,7 +168,8 @@ export default function DRE({ competencia }) {
             metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
             setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
           {visao === 'analitica' && contas.filter(c => c.grupo === 'RECEITA BRUTA').map(c => (
-            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base} editando={editando} valorTemp={valorTemp}
+            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base}
+              editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
           ))}
 
@@ -186,7 +178,8 @@ export default function DRE({ competencia }) {
             metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
             setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
           {visao === 'analitica' && contas.filter(c => c.grupo === 'DEDUÇÕES').map(c => (
-            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base} editando={editando} valorTemp={valorTemp}
+            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base}
+              editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
           ))}
 
@@ -199,7 +192,8 @@ export default function DRE({ competencia }) {
             metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
             setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
           {visao === 'analitica' && contas.filter(c => c.grupo === 'CMV').map(c => (
-            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base} editando={editando} valorTemp={valorTemp}
+            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base}
+              editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
           ))}
 
@@ -209,8 +203,9 @@ export default function DRE({ competencia }) {
 
           {/* DESPESAS */}
           {gruposDespesa.map(grupo => (
-            <GrupoDespesa key={grupo} grupo={grupo} contas={contas} getValor={getValor} somaGrupo={somaGrupo}
-              base={base} visao={visao} editando={editando} valorTemp={valorTemp}
+            <GrupoDespesa key={grupo} grupo={grupo} contas={contas} getValor={getValor}
+              somaGrupo={somaGrupo} base={base} visao={visao}
+              editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor}
               metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
               setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
@@ -225,7 +220,8 @@ export default function DRE({ competencia }) {
             metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
             setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
           {visao === 'analitica' && contas.filter(c => c.tipo === 'financeiro').map(c => (
-            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base} editando={editando} valorTemp={valorTemp}
+            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base}
+              editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
           ))}
 
@@ -234,7 +230,8 @@ export default function DRE({ competencia }) {
             metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
             setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
           {visao === 'analitica' && contas.filter(c => c.tipo === 'complementar').map(c => (
-            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base} editando={editando} valorTemp={valorTemp}
+            <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base}
+              editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
           ))}
 
@@ -248,6 +245,7 @@ export default function DRE({ competencia }) {
               MOVIMENTOS FORA DA DRE — OBRIGAÇÕES DO PASSADO
             </td>
           </tr>
+
           {extras.map(e => (
             <tr key={e.id} style={{ borderBottom: '1px solid var(--border)' }}>
               <td style={{ padding: '7px 8px 7px 20px', color: 'var(--textSub)' }}>
@@ -255,15 +253,15 @@ export default function DRE({ competencia }) {
               </td>
               <td style={{ padding: '7px 8px', textAlign: 'right', color: 'var(--danger)', fontFamily: 'JetBrains Mono, monospace' }}>
                 ({fmt(parseFloat(e.valor))})
+                <button onClick={() => deletarExtra(e.id)} style={{ marginLeft: '8px', background: 'none', border: 'none', color: 'var(--textMuted)', cursor: 'pointer', fontSize: '11px' }}>✕</button>
               </td>
               <td style={{ padding: '7px 8px', textAlign: 'right', color: 'var(--textMuted)', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
                 {pct(-parseFloat(e.valor), base)}
               </td>
-              <td colSpan={2} style={{ textAlign: 'right', padding: '7px 8px' }}>
-                <button onClick={() => deletarExtra(e.id)} style={{ background: 'none', border: 'none', color: 'var(--textMuted)', cursor: 'pointer', fontSize: '11px' }}>✕ remover</button>
-              </td>
+              <td colSpan={2}></td>
             </tr>
           ))}
+
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
             <td style={{ padding: '6px 8px 6px 20px' }} colSpan={2}>
               <input placeholder="Tipo (ex: Parcelamento de Impostos)" value={novoExtra.tipo}
@@ -291,6 +289,22 @@ export default function DRE({ competencia }) {
         </tbody>
       </table>
     </div>
+  )
+}
+
+function GrupoDespesa({ grupo, contas, getValor, somaGrupo, base, visao, editando, valorTemp, setEditando, setValorTemp, salvarValor, metas, editandoMeta, metaTemp, setEditandoMeta, setMetaTemp, salvarMeta }) {
+  const chave = grupo.replace(/\s/g, '_').toLowerCase()
+  return (
+    <>
+      <LinhaGrupo label={`(-) ${grupo}`} valor={-somaGrupo(grupo)} base={base} chave={chave}
+        metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
+        setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
+      {visao === 'analitica' && contas.filter(c => c.grupo === grupo).map(c => (
+        <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base}
+          editando={editando} valorTemp={valorTemp}
+          setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
+      ))}
+    </>
   )
 }
 
@@ -322,21 +336,6 @@ function CelulaMeta({ chave, metas, editandoMeta, metaTemp, setEditandoMeta, set
   )
 }
 
-function GrupoDespesa({ grupo, contas, getValor, somaGrupo, base, visao, editando, valorTemp, setEditando, setValorTemp, salvarValor, metas, editandoMeta, metaTemp, setEditandoMeta, setMetaTemp, salvarMeta }) {
-  const chave = grupo.replace(/\s/g, '_').toLowerCase()
-  return (
-    <>
-      <LinhaGrupo label={`(-) ${grupo}`} valor={-somaGrupo(grupo)} base={base} chave={chave}
-        metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
-        setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
-      {visao === 'analitica' && contas.filter(c => c.grupo === grupo).map(c => (
-        <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base} editando={editando} valorTemp={valorTemp}
-          setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
-      ))}
-    </>
-  )
-}
-
 function LinhaGrupo({ label, valor, base, chave, metas, editandoMeta, metaTemp, setEditandoMeta, setMetaTemp, salvarMeta }) {
   return (
     <tr style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
@@ -345,7 +344,7 @@ function LinhaGrupo({ label, valor, base, chave, metas, editandoMeta, metaTemp, 
         {valor !== 0 ? fmt(valor) : '—'}
       </td>
       <td style={{ padding: '8px', textAlign: 'right', color: 'var(--textMuted)', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-        {pct(valor, base)}
+        {base && base !== 0 ? ((valor / base) * 100).toFixed(1) + '%' : '—'}
       </td>
       <CelulaMeta chave={chave} valor={valor} metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
         setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
@@ -361,7 +360,7 @@ function LinhaTotal({ label, valor, base, chave, destaque, metas, editandoMeta, 
         {fmt(valor)}
       </td>
       <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--textMuted)', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-        {pct(valor, base)}
+        {base && base !== 0 ? ((valor / base) * 100).toFixed(1) + '%' : '—'}
       </td>
       <CelulaMeta chave={chave} valor={valor} metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
         setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
@@ -389,13 +388,14 @@ function LinhaConta({ conta, valor, base, editando, valorTemp, setEditando, setV
           </span>
         ) : (
           <span onClick={() => { setEditando(conta.id); setValorTemp(valor ? String(valor) : '') }}
-            style={{ cursor: 'pointer', color: valor ? 'var(--text)' : 'var(--textMuted)', fontFamily: 'JetBrains Mono, monospace', fontSize: '13px' }}>
+            title="Clique para editar"
+            style={{ cursor: 'pointer', color: valor ? 'var(--text)' : 'var(--textMuted)', fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', display: 'inline-block', minWidth: '60px', textAlign: 'right' }}>
             {valor ? fmt(valor) : '—'}
           </span>
         )}
       </td>
       <td style={{ padding: '7px 8px', textAlign: 'right', color: 'var(--textMuted)', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-        {pct(valor, base)}
+        {base && base !== 0 ? ((valor / base) * 100).toFixed(1) + '%' : '—'}
       </td>
       <td colSpan={2} style={{ padding: '7px 8px' }}></td>
     </tr>

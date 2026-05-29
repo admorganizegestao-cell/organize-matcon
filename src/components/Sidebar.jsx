@@ -6,7 +6,7 @@ const menu = [
   { id: 'lucro', label: 'Destinação do Lucro', fase: 1 },
   { id: 'painel', label: 'Painel do Dono', fase: 1 },
   { id: 'despesas', label: 'Análise de Despesas', fase: 1 },
-  { id: 'diagnostico', label: 'Diagnóstico Financeiro', fase: 2 },
+  { id: 'diagnostico', label: 'Diagnóstico Empresarial', fase: 1 },
   { id: 'rh', label: 'RH', fase: 2 },
   { id: 'vendas', label: 'Vendas / Metas', fase: 2 },
   { id: 'marketing', label: 'Marketing', fase: 2 },
