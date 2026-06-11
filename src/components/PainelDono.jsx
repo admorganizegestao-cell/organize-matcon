@@ -50,8 +50,8 @@ export default function PainelDono({ competencia }) {
     const receitaLiquida = receitaBruta - deducoes
     const cmv = getDRECod('3.01')+getDRECod('3.02')+getDRECod('3.03')-getDRECod('3.04')-getDRECod('3.05')
     const lucroBruto = receitaLiquida - cmv
-    const gruposDespesa = ['DESPESAS ADMINISTRATIVAS','DESPESAS COM VENDAS','MARKETING','DESPESAS ESTRUTURAIS','ENTREGA / LOGÍSTICA','SEGURANÇA DO TRABALHO','SERVIÇOS DE TERCEIROS','TREINAMENTOS']
-    const totalDespesas = gruposDespesa.reduce((acc,g)=>acc+(dreContas||[]).filter(c=>c.grupo===g).reduce((a,c)=>a+(dreMap[c.id]||0),0),0)
+    const gruposDespesa = ['RH','CUSTO COM VENDAS','DESPESAS ADMINISTRATIVAS','DESPESAS COMERCIAIS','MARKETING','DESPESAS ESTRUTURAIS','ENTREGA / LOGÍSTICA','SEGURANÇA DO TRABALHO']
+    const totalDespesas = (dreContas||[]).filter(c=>c.tipo==='despesa').reduce((a,c)=>a+(dreMap[c.id]||0),0)
     const ebitda = lucroBruto - totalDespesas
     const financeiro = (dreContas||[]).filter(c=>c.tipo==='financeiro').reduce((a,c)=>a+(dreMap[c.id]||0),0)
     const complementar = (dreContas||[]).filter(c=>c.tipo==='complementar').reduce((a,c)=>a+(dreMap[c.id]||0),0)

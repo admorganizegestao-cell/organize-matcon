@@ -62,8 +62,7 @@ export default function DestinacaoLucro({ competencia }) {
     const receitaLiquida = receitaBruta - deducoes
     const cmv = getDRECod('3.01')+getDRECod('3.02')+getDRECod('3.03')-getDRECod('3.04')-getDRECod('3.05')
     const lucroBruto = receitaLiquida - cmv
-    const gruposDespesa = ['DESPESAS ADMINISTRATIVAS','DESPESAS COM VENDAS','MARKETING','DESPESAS ESTRUTURAIS','ENTREGA / LOGÍSTICA','SEGURANÇA DO TRABALHO','SERVIÇOS DE TERCEIROS','TREINAMENTOS']
-    const totalDespesas = gruposDespesa.reduce((acc,g)=>acc+(dreContas||[]).filter(c=>c.grupo===g).reduce((a,c)=>a+(dreMap[c.id]||0),0),0)
+    const totalDespesas = (dreContas||[]).filter(c=>c.tipo==='despesa').reduce((a,c)=>a+(dreMap[c.id]||0),0)
     const ebitda = lucroBruto - totalDespesas
 
     const varCR = getBP('A.04') - getBPAnt('A.04')

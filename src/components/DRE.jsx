@@ -15,10 +15,10 @@ const pct = (v, base) => {
 
 const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
-const gruposDespesa = [
-  'DESPESAS ADMINISTRATIVAS','DESPESAS COM VENDAS','MARKETING',
-  'DESPESAS ESTRUTURAIS','ENTREGA / LOGÍSTICA','SEGURANÇA DO TRABALHO',
-  'SERVIÇOS DE TERCEIROS','TREINAMENTOS'
+const deptosVariaveis = ['CUSTO COM VENDAS', 'ENTREGA / LOGÍSTICA']
+const deptosFixas = [
+  'RH', 'DESPESAS ADMINISTRATIVAS', 'DESPESAS COMERCIAIS', 'MARKETING',
+  'DESPESAS ESTRUTURAIS', 'ENTREGA / LOGÍSTICA', 'SEGURANÇA DO TRABALHO'
 ]
 
 export default function DRE({ competencia }) {
@@ -108,6 +108,7 @@ export default function DRE({ competencia }) {
   }
 
   const somaGrupo = (grupo) => contas.filter(c => c.grupo === grupo).reduce((acc, c) => acc + getValor(c), 0)
+  const somaGrupoNat = (grupo, nat) => contas.filter(c => c.grupo === grupo && c.natureza === nat).reduce((acc, c) => acc + getValor(c), 0)
   const somaTipo = (tipo) => contas.filter(c => c.tipo === tipo).reduce((acc, c) => acc + getValor(c), 0)
 
   const receitaBruta = somaTipo('receita')
@@ -116,8 +117,10 @@ export default function DRE({ competencia }) {
   const cv = (cod) => contas.find(c => c.codigo === cod)
   const cmv = getValor(cv('3.01')) + getValor(cv('3.02')) + getValor(cv('3.03')) - getValor(cv('3.04')) - getValor(cv('3.05'))
   const lucroBruto = receitaLiquida - cmv
-  const totalDespesas = gruposDespesa.reduce((acc, g) => acc + somaGrupo(g), 0)
-  const ebitda = lucroBruto - totalDespesas
+  const totalVariaveis = contas.filter(c => c.tipo === 'despesa' && c.natureza === 'variavel').reduce((acc, c) => acc + getValor(c), 0)
+  const margemContribuicao = lucroBruto - totalVariaveis
+  const totalFixas = contas.filter(c => c.tipo === 'despesa' && c.natureza === 'fixa').reduce((acc, c) => acc + getValor(c), 0)
+  const ebitda = margemContribuicao - totalFixas
   const financeiro = somaTipo('financeiro')
   const complementar = somaTipo('complementar')
   const lucroLiquido = ebitda - financeiro + complementar
@@ -201,10 +204,26 @@ export default function DRE({ competencia }) {
             metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
             setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
 
-          {/* DESPESAS */}
-          {gruposDespesa.map(grupo => (
-            <GrupoDespesa key={grupo} grupo={grupo} contas={contas} getValor={getValor}
-              somaGrupo={somaGrupo} base={base} visao={visao}
+          {/* CUSTOS / DESPESAS VARIÁVEIS */}
+          <SecaoHeader label="(-) CUSTOS / DESPESAS VARIÁVEIS" />
+          {deptosVariaveis.map(grupo => (
+            <GrupoDespesa key={'var-' + grupo} grupo={grupo} natureza="variavel" contas={contas} getValor={getValor}
+              somaGrupoNat={somaGrupoNat} base={base} visao={visao}
+              editando={editando} valorTemp={valorTemp}
+              setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor}
+              metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
+              setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
+          ))}
+
+          <LinhaTotal label="(=) MARGEM DE CONTRIBUIÇÃO" valor={margemContribuicao} base={base} chave="margemContribuicao" destaque
+            metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
+            setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
+
+          {/* DESPESAS FIXAS */}
+          <SecaoHeader label="(-) DESPESAS FIXAS" />
+          {deptosFixas.map(grupo => (
+            <GrupoDespesa key={'fix-' + grupo} grupo={grupo} natureza="fixa" contas={contas} getValor={getValor}
+              somaGrupoNat={somaGrupoNat} base={base} visao={visao}
               editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor}
               metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
@@ -292,14 +311,27 @@ export default function DRE({ competencia }) {
   )
 }
 
-function GrupoDespesa({ grupo, contas, getValor, somaGrupo, base, visao, editando, valorTemp, setEditando, setValorTemp, salvarValor, metas, editandoMeta, metaTemp, setEditandoMeta, setMetaTemp, salvarMeta }) {
-  const chave = grupo.replace(/\s/g, '_').toLowerCase()
+function SecaoHeader({ label }) {
+  return (
+    <tr>
+      <td colSpan={5} style={{ padding: '16px 8px 6px', color: 'var(--warning)', fontWeight: 600, fontSize: '12px', letterSpacing: '0.5px' }}>
+        {label}
+      </td>
+    </tr>
+  )
+}
+
+function GrupoDespesa({ grupo, natureza, contas, getValor, somaGrupoNat, base, visao, editando, valorTemp, setEditando, setValorTemp, salvarValor, metas, editandoMeta, metaTemp, setEditandoMeta, setMetaTemp, salvarMeta }) {
+  const contasDoGrupo = contas.filter(c => c.grupo === grupo && c.natureza === natureza)
+  if (contasDoGrupo.length === 0) return null
+  const chave = `${natureza}_${grupo.replace(/\s/g, '_').toLowerCase()}`
+  const total = somaGrupoNat(grupo, natureza)
   return (
     <>
-      <LinhaGrupo label={`(-) ${grupo}`} valor={-somaGrupo(grupo)} base={base} chave={chave}
+      <LinhaGrupo label={`(-) ${grupo}`} valor={-total} base={base} chave={chave}
         metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
         setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
-      {visao === 'analitica' && contas.filter(c => c.grupo === grupo).map(c => (
+      {visao === 'analitica' && contasDoGrupo.map(c => (
         <LinhaConta key={c.id} conta={c} valor={getValor(c)} base={base}
           editando={editando} valorTemp={valorTemp}
           setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />

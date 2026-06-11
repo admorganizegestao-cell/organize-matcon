@@ -12,14 +12,14 @@ const fmtPct = (v) => (!v || isNaN(v) || !isFinite(v)) ? '—' : v.toFixed(1) + 
 const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const departamentos = [
-  { id: 'adm', label: 'Administrativo', grupo: 'DESPESAS ADMINISTRATIVAS', cor: '#3B82F6' },
-  { id: 'vendas', label: 'Vendas', grupo: 'DESPESAS COM VENDAS', cor: '#00A651' },
-  { id: 'marketing', label: 'Marketing', grupo: 'MARKETING', cor: '#8B5CF6' },
-  { id: 'estrutural', label: 'Estrutural', grupo: 'DESPESAS ESTRUTURAIS', cor: '#E8920A' },
-  { id: 'entrega', label: 'Entrega/Logística', grupo: 'ENTREGA / LOGÍSTICA', cor: '#06B6D4' },
-  { id: 'seguranca', label: 'Segurança Trabalho', grupo: 'SEGURANÇA DO TRABALHO', cor: '#F59E0B' },
-  { id: 'terceiros', label: 'Terceiros', grupo: 'SERVIÇOS DE TERCEIROS', cor: '#EC4899' },
-  { id: 'treinamentos', label: 'Treinamentos', grupo: 'TREINAMENTOS', cor: '#10B981' },
+  { id: 'rh', label: 'RH', grupo: 'RH', cor: '#3B82F6' },
+  { id: 'custovendas', label: 'Custo com Vendas', grupo: 'CUSTO COM VENDAS', cor: '#00A651' },
+  { id: 'adm', label: 'Administrativo', grupo: 'DESPESAS ADMINISTRATIVAS', cor: '#8B5CF6' },
+  { id: 'comercial', label: 'Comercial', grupo: 'DESPESAS COMERCIAIS', cor: '#EC4899' },
+  { id: 'marketing', label: 'Marketing', grupo: 'MARKETING', cor: '#E8920A' },
+  { id: 'estrutural', label: 'Estrutural', grupo: 'DESPESAS ESTRUTURAIS', cor: '#06B6D4' },
+  { id: 'entrega', label: 'Entrega/Logística', grupo: 'ENTREGA / LOGÍSTICA', cor: '#F59E0B' },
+  { id: 'seguranca', label: 'Segurança Trabalho', grupo: 'SEGURANÇA DO TRABALHO', cor: '#10B981' },
 ]
 
 export default function AnaliseDespesas({ competencia }) {
