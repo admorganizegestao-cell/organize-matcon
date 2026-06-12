@@ -123,7 +123,12 @@ export default function DRE({ competencia }) {
   const ebitda = margemContribuicao - totalFixas
   const financeiro = somaTipo('financeiro')
   const complementar = somaTipo('complementar')
-  const lucroLiquido = ebitda - financeiro + complementar
+  const lucroReal = ebitda - financeiro + complementar
+  const irpj = lucroReal > 0 ? lucroReal * 0.15 : 0
+  const adicionalIrpj = lucroReal > 20000 ? (lucroReal - 20000) * 0.10 : 0
+  const csll = lucroReal > 0 ? lucroReal * 0.09 : 0
+  const totalImpostos = irpj + adicionalIrpj + csll
+  const lucroLiquido = lucroReal - totalImpostos
   const totalExtras = extras.reduce((acc, e) => acc + parseFloat(e.valor || 0), 0)
   const resultadoDisponivel = lucroLiquido - totalExtras
   const base = receitaLiquida
@@ -253,6 +258,22 @@ export default function DRE({ competencia }) {
               editando={editando} valorTemp={valorTemp}
               setEditando={setEditando} setValorTemp={setValorTemp} salvarValor={salvarValor} />
           ))}
+
+          <LinhaTotal label="(=) LUCRO ANTES DOS IMPOSTOS (LUCRO REAL)" valor={lucroReal} base={base} chave="lucroReal"
+            metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
+            setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
+
+          {/* IMPOSTOS SOBRE O LUCRO (provisão automática) */}
+          <SecaoHeader label="(-) IMPOSTOS SOBRE O LUCRO — PROVISÃO" />
+          <LinhaGrupo label="(-) IRPJ (15%)" valor={-irpj} base={base} chave="irpj"
+            metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
+            setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
+          <LinhaGrupo label="(-) ADICIONAL DE IRPJ (10% acima de R$ 20.000)" valor={-adicionalIrpj} base={base} chave="adicionalIrpj"
+            metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
+            setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
+          <LinhaGrupo label="(-) CSLL (9%)" valor={-csll} base={base} chave="csll"
+            metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
+            setEditandoMeta={setEditandoMeta} setMetaTemp={setMetaTemp} salvarMeta={salvarMeta} />
 
           <LinhaTotal label="(=) LUCRO LÍQUIDO" valor={lucroLiquido} base={base} chave="lucroLiquido" destaque
             metas={metas} editandoMeta={editandoMeta} metaTemp={metaTemp}
