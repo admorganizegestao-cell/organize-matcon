@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useContext } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, CalendarDays, Users, Scissors, Sparkles,
   Boxes, Wallet, TrendingUp, Landmark, Megaphone, Target, Settings,
   Menu, X, LogOut, User2
 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { AuthContext } from '../contexts/AuthContext'
 
 const navigation = [
   { group: null, items: [
@@ -40,9 +41,16 @@ const navigation = [
 
 export default function SalaoSidebar() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, signOut } = useContext(AuthContext)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const isActive = (path) => location.pathname === path
+
+  async function handleLogout() {
+    await signOut()
+    navigate('/login')
+  }
 
   const NavLink = ({ item }) => (
     <Link
@@ -95,13 +103,13 @@ export default function SalaoSidebar() {
 
       {/* Footer */}
       <div className="px-3 py-3 border-t border-[hsl(var(--sidebar-border))]">
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">
+        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E040A0] to-[#9333EA] flex items-center justify-center shrink-0">
             <User2 className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 text-left min-w-0">
-            <p className="text-xs font-medium text-white truncate">Admin</p>
-            <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">Administrador</p>
+            <p className="text-xs font-medium text-white truncate">{user?.user_metadata?.name || user?.email || 'Usuário'}</p>
+            <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">Sair</p>
           </div>
           <LogOut className="w-4 h-4 text-[hsl(var(--muted-foreground))] hover:text-white shrink-0" />
         </button>

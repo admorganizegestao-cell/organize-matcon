@@ -1,59 +1,131 @@
-import React, { useState } from 'react'
-import { CalendarDays, Plus, ChevronLeft, ChevronRight, Clock, User2, Scissors } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { CalendarDays, Plus, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import Button from '../components/Button'
-import { fmtDate, fmtTime, addDays, isSameDay, todayISO } from '../lib/utils'
+import EmptyState from '../components/EmptyState'
+import Modal, { Field, inputClass } from '../components/Modal'
+import { useAgendamentos } from '../hooks/useAgendamentos'
+import { useClientes } from '../hooks/useClientes'
+import { useSupabaseCollection } from '../hooks/useSupabaseCollection'
+import { todayISO } from '../lib/utils'
 
-// Mock data
-const mockData = {
-  professionals: [
-    { id: 1, name: 'Marina', color: '#E040A0', type: 'CLT' },
-    { id: 2, name: 'Carlos', color: '#9333EA', type: 'Autônomo' },
-  ],
-  schedules: [
-    { id: 1, professionalId: 1, clientName: 'Maria Silva', service: 'Corte + Escova', date: '2024-12-20', time: '09:00', status: 'agendado' },
-    { id: 2, professionalId: 2, clientName: 'João Santos', service: 'Barba', date: '2024-12-20', time: '10:30', status: 'confirmado' },
-  ]
+const statusLabels = {
+  agendado: 'Agendado',
+  confirmado: 'Confirmado',
+  concluido: 'Concluído',
+  cancelado: 'Cancelado',
+  faltou: 'Faltou'
 }
 
+const statusColors = {
+  agendado: 'bg-[#E040A0]',
+  confirmado: 'bg-[#3B82F6]',
+  concluido: 'bg-[#22C55E]',
+  cancelado: 'bg-[#6B7280]',
+  faltou: 'bg-[#EF4444]'
+}
+
+function toLocalISOString(date, time) {
+  return new Date(`${date}T${time}:00`).toISOString()
+}
+
+function timeOf(isoString) {
+  return new Date(isoString).toTimeString().slice(0, 5)
+}
+
+function dateOf(isoString) {
+  const d = new Date(isoString)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const emptyForm = { client_id: '', professional_id: '', service_id: '', date: todayISO(), time: '09:00', notes: '' }
+
 export default function Agendamento() {
+  const { items: agendamentos, loading, add, update, remove } = useAgendamentos()
+  const { clientes } = useClientes()
+  const { items: professionals } = useSupabaseCollection('profissionais')
+  const { items: services } = useSupabaseCollection('servicos')
+
   const [selectedDate, setSelectedDate] = useState(todayISO())
   const [showNewModal, setShowNewModal] = useState(false)
-  const [recurringType, setRecurringType] = useState('none')
+  const [showDetail, setShowDetail] = useState(null)
+  const [form, setForm] = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
 
-  const handlePrevDay = () => {
+  const activeProfessionals = professionals.filter(p => p.active !== false)
+
+  const dayAppointments = useMemo(
+    () => agendamentos.filter(a => dateOf(a.starts_at) === selectedDate),
+    [agendamentos, selectedDate]
+  )
+
+  function handlePrevDay() {
     const d = new Date(selectedDate)
     d.setDate(d.getDate() - 1)
     setSelectedDate(d.toISOString().split('T')[0])
   }
 
-  const handleNextDay = () => {
+  function handleNextDay() {
     const d = new Date(selectedDate)
     d.setDate(d.getDate() + 1)
     setSelectedDate(d.toISOString().split('T')[0])
   }
 
-  const getTodaySchedulesCount = () => {
-    return mockData.schedules.filter(s => s.date === selectedDate).length
-  }
-
-  const getHourSlots = () => {
+  function getHourSlots() {
     const slots = []
-    for (let i = 8; i < 20; i++) {
-      slots.push(`${String(i).padStart(2, '0')}:00`)
-    }
+    for (let i = 8; i < 20; i++) slots.push(`${String(i).padStart(2, '0')}:00`)
     return slots
   }
 
-  const getStatusColor = (status) => {
-    const colors = {
-      agendado: 'bg-[#E040A0]',
-      confirmado: 'bg-[#3B82F6]',
-      realizado: 'bg-[#22C55E]',
-      cancelado: 'bg-[#EF4444]'
-    }
-    return colors[status] || 'bg-[#E040A0]'
+  function openNew(prefill = {}) {
+    setForm({ ...emptyForm, date: selectedDate, ...prefill })
+    setFormError('')
+    setShowNewModal(true)
   }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.client_id || !form.professional_id || !form.service_id) {
+      setFormError('Preencha cliente, profissional e serviço.')
+      return
+    }
+    const service = services.find(s => s.id === form.service_id)
+    setSaving(true)
+    setFormError('')
+    const result = await add({
+      client_id: form.client_id,
+      professional_id: form.professional_id,
+      service_id: form.service_id,
+      starts_at: toLocalISOString(form.date, form.time),
+      duration_minutes: service?.time_minutes || 30,
+      notes: form.notes,
+      status: 'agendado'
+    })
+    setSaving(false)
+    if (result.error) {
+      setFormError(result.error)
+      return
+    }
+    setShowNewModal(false)
+  }
+
+  async function handleStatusChange(id, status) {
+    await update(id, { status })
+    setShowDetail(prev => (prev ? { ...prev, status } : prev))
+  }
+
+  async function handleDeleteAppointment(id) {
+    if (confirm('Excluir este agendamento?')) {
+      await remove(id)
+      setShowDetail(null)
+    }
+  }
+
+  const canSchedule = activeProfessionals.length > 0 && services.length > 0 && clientes.length > 0
 
   return (
     <div>
@@ -62,244 +134,170 @@ export default function Agendamento() {
         subtitle="Agenda de atendimentos por profissional"
         icon={CalendarDays}
         actions={
-          <Button onClick={() => setShowNewModal(true)}>
+          <Button onClick={() => openNew()} disabled={!canSchedule}>
             <Plus className="w-4 h-4" />
             Novo
           </Button>
         }
       />
 
+      {!canSchedule && (
+        <div className="mb-6 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 text-sm text-[#F59E0B]">
+          Para criar um agendamento, cadastre pelo menos um cliente, um profissional ativo e um serviço.
+        </div>
+      )}
+
       {/* Date Selector */}
       <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-4 mb-6">
         <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={handlePrevDay}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
+          <button onClick={handlePrevDay} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="text-center">
             <p className="text-lg font-semibold text-white">
-              {new Date(selectedDate).toLocaleDateString('pt-BR', {
-                weekday: 'long',
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
+              {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('pt-BR', {
+                weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
               }).replace(/^\w/, c => c.toUpperCase())}
             </p>
             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-              {getTodaySchedulesCount()} agendamento{getTodaySchedulesCount() !== 1 ? 's' : ''}
+              {dayAppointments.length} agendamento{dayAppointments.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
-            onClick={handleNextDay}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
+          <button onClick={handleNextDay} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* Schedule Grid */}
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <div className="inline-grid grid-cols-[60px_repeat(auto-fit,minmax(250px,1fr))] gap-0 min-w-full">
-            {/* Header */}
-            <div className="col-span-1 sticky left-0 z-10" />
-            {mockData.professionals.map(prof => (
-              <div
-                key={prof.id}
-                className="p-3 border-b border-r border-[hsl(var(--border))] text-center"
-              >
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 text-white font-bold"
-                  style={{ backgroundColor: prof.color }}
-                >
-                  {prof.name[0]}
+      {activeProfessionals.length === 0 ? (
+        <EmptyState
+          icon={CalendarDays}
+          title="Nenhum profissional ativo"
+          description="Cadastre profissionais para montar a agenda."
+        />
+      ) : (
+        <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <div className="inline-grid grid-cols-[60px_repeat(auto-fit,minmax(200px,1fr))] gap-0 min-w-full">
+              <div className="col-span-1 sticky left-0 z-10 bg-[hsl(var(--card))]" />
+              {activeProfessionals.map(prof => (
+                <div key={prof.id} className="p-3 border-b border-r border-[hsl(var(--border))] text-center">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 text-white font-bold"
+                    style={{ backgroundColor: prof.color }}
+                  >
+                    {prof.name?.[0]?.toUpperCase()}
+                  </div>
+                  <p className="text-xs font-semibold text-white truncate">{prof.name}</p>
                 </div>
-                <p className="text-xs font-semibold text-white truncate">{prof.name}</p>
-                <p className="text-[10px] text-[hsl(var(--muted-foreground))]">{prof.type}</p>
-              </div>
-            ))}
+              ))}
 
-            {/* Time Slots */}
-            {getHourSlots().map(time => (
-              <React.Fragment key={time}>
-                <div className="p-3 border-b border-r border-[hsl(var(--border))] text-xs font-medium text-[hsl(var(--muted-foreground))] h-12 flex items-center sticky left-0 z-10 bg-[hsl(var(--card))]">
-                  {time}
-                </div>
-                {mockData.professionals.map(prof => {
-                  const schedule = mockData.schedules.find(
-                    s => s.professionalId === prof.id && s.date === selectedDate && s.time === time
-                  )
-                  return (
-                    <div
-                      key={`${prof.id}-${time}`}
-                      className="p-2 border-b border-r border-[hsl(var(--border))] h-12 relative"
-                    >
-                      {schedule && (
-                        <div
-                          className={`${getStatusColor(schedule.status)} rounded-lg p-2 text-xs text-white truncate cursor-pointer hover:opacity-90 transition-opacity`}
-                        >
-                          {schedule.clientName}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Modal: New Schedule */}
-      {showNewModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-white mb-4">Novo Agendamento</h2>
-
-            <div className="space-y-4 mb-6">
-              {/* Client */}
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">Cliente *</label>
-                <select className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]">
-                  <option>Selecione um cliente</option>
-                  <option>Maria Silva</option>
-                  <option>João Santos</option>
-                </select>
-              </div>
-
-              {/* Professional */}
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">Profissional *</label>
-                <select className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]">
-                  <option>Selecione um profissional</option>
-                  {mockData.professionals.map(p => (
-                    <option key={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Date and Time */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium text-white mb-2 block">Data</label>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-white mb-2 block">Horário</label>
-                  <select className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm">
-                    <option>09:00</option>
-                    <option>10:00</option>
-                    <option>11:00</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Service Type */}
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">Tipo</label>
-                <div className="flex gap-2">
-                  <button className="flex-1 px-3 py-2 bg-[hsl(var(--primary))] text-white text-sm rounded-lg font-medium">
-                    Serviço
-                  </button>
-                  <button className="flex-1 px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] text-sm rounded-lg hover:bg-white/5">
-                    Combo
-                  </button>
-                </div>
-              </div>
-
-              {/* Service Selection */}
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">Serviço *</label>
-                <select className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm">
-                  <option>Corte + Escova - R$ 150,00</option>
-                  <option>Barba - R$ 50,00</option>
-                  <option>Manicure - R$ 80,00</option>
-                </select>
-              </div>
-
-              {/* Recurring */}
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">Agendar Recorrentemente</label>
-                <select
-                  value={recurringType}
-                  onChange={(e) => setRecurringType(e.target.value)}
-                  className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm"
-                >
-                  <option value="none">Não repetir</option>
-                  <option value="weekly">Semanalmente</option>
-                  <option value="biweekly">A cada 2 semanas</option>
-                  <option value="monthly">Mensalmente</option>
-                  <option value="custom">Personalizar...</option>
-                </select>
-              </div>
-
-              {/* Custom Recurring Cycle */}
-              {recurringType === 'custom' && (
-                <div>
-                  <label className="text-sm font-medium text-white mb-2 block">Duração do Ciclo (em semanas)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="52"
-                    defaultValue="4"
-                    className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm"
-                    placeholder="Ex: 4 (a cada 4 semanas)"
-                  />
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                    Deixe em branco para não repetir
-                  </p>
-                </div>
-              )}
-
-              {/* Number of Repetitions */}
-              {recurringType !== 'none' && recurringType !== 'custom' && (
-                <div>
-                  <label className="text-sm font-medium text-white mb-2 block">Repetir por quantas semanas?</label>
-                  <select className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm">
-                    <option>4 semanas</option>
-                    <option>8 semanas</option>
-                    <option>12 semanas</option>
-                    <option>26 semanas</option>
-                    <option>52 semanas</option>
-                  </select>
-                </div>
-              )}
-
-              {/* Notes */}
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">Observações</label>
-                <textarea
-                  className="w-full px-3 py-2 bg-[hsl(var(--input))] border border-[hsl(var(--border))] rounded-lg text-white text-sm resize-none"
-                  rows="3"
-                  placeholder="Adicione anotações sobre o agendamento..."
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowNewModal(false)}
-              >
-                Cancelar
-              </Button>
-              <Button className="flex-1" onClick={() => setShowNewModal(false)}>
-                Agendar
-              </Button>
+              {getHourSlots().map(time => (
+                <React.Fragment key={time}>
+                  <div className="p-3 border-b border-r border-[hsl(var(--border))] text-xs font-medium text-[hsl(var(--muted-foreground))] h-14 flex items-center sticky left-0 z-10 bg-[hsl(var(--card))]">
+                    {time}
+                  </div>
+                  {activeProfessionals.map(prof => {
+                    const appt = dayAppointments.find(a => a.professional_id === prof.id && timeOf(a.starts_at) === time)
+                    return (
+                      <div
+                        key={`${prof.id}-${time}`}
+                        onClick={() => (appt ? setShowDetail(appt) : openNew({ professional_id: prof.id, time }))}
+                        className="p-2 border-b border-r border-[hsl(var(--border))] h-14 relative cursor-pointer hover:bg-white/5"
+                      >
+                        {appt && (
+                          <div className={`${statusColors[appt.status]} rounded-lg p-2 text-xs text-white truncate`}>
+                            {appt.cliente?.name || 'Cliente removido'}
+                            <span className="opacity-80"> · {appt.servico?.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </React.Fragment>
+              ))}
             </div>
           </div>
         </div>
       )}
+
+      {/* Modal: New Schedule */}
+      <Modal open={showNewModal} onClose={() => setShowNewModal(false)} title="Novo Agendamento">
+        <form onSubmit={handleSubmit}>
+          <Field label="Cliente *">
+            <select required className={inputClass} value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })}>
+              <option value="">Selecione um cliente</option>
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Profissional *">
+            <select required className={inputClass} value={form.professional_id} onChange={e => setForm({ ...form, professional_id: e.target.value })}>
+              <option value="">Selecione um profissional</option>
+              {activeProfessionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Data">
+              <input type="date" className={inputClass} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+            </Field>
+            <Field label="Horário">
+              <input type="time" className={inputClass} value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Serviço *">
+            <select required className={inputClass} value={form.service_id} onChange={e => setForm({ ...form, service_id: e.target.value })}>
+              <option value="">Selecione um serviço</option>
+              {services.map(s => <option key={s.id} value={s.id}>{s.name} - R$ {Number(s.price).toFixed(2)}</option>)}
+            </select>
+          </Field>
+          <Field label="Observações">
+            <textarea
+              className={inputClass + ' resize-none'}
+              rows="3"
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })}
+              placeholder="Adicione anotações sobre o agendamento..."
+            />
+          </Field>
+          {formError && <p className="text-sm text-[#EF4444] mb-2">{formError}</p>}
+          <div className="flex gap-3 mt-6">
+            <Button type="button" variant="outline" className="flex-1" onClick={() => setShowNewModal(false)}>Cancelar</Button>
+            <Button type="submit" className="flex-1" disabled={saving}>{saving ? 'Salvando...' : 'Agendar'}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Appointment Detail */}
+      <Modal open={!!showDetail} onClose={() => setShowDetail(null)} title="Detalhes do Agendamento">
+        {showDetail && (
+          <div>
+            <div className="space-y-2 mb-4 text-sm">
+              <p className="text-white font-semibold text-base">{showDetail.cliente?.name}</p>
+              <p className="text-[hsl(var(--muted-foreground))] flex items-center gap-2">
+                <Clock className="w-4 h-4" /> {timeOf(showDetail.starts_at)} · {dateOf(showDetail.starts_at)}
+              </p>
+              <p className="text-[hsl(var(--muted-foreground))]">Serviço: {showDetail.servico?.name}</p>
+              <p className="text-[hsl(var(--muted-foreground))]">Profissional: {showDetail.profissional?.name}</p>
+              {showDetail.notes && <p className="text-[hsl(var(--muted-foreground))]">Obs: {showDetail.notes}</p>}
+            </div>
+            <Field label="Status">
+              <select
+                className={inputClass}
+                value={showDetail.status}
+                onChange={e => handleStatusChange(showDetail.id, e.target.value)}
+              >
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </Field>
+            <div className="flex gap-3 mt-6">
+              <Button variant="destructive" className="flex-1" onClick={() => handleDeleteAppointment(showDetail.id)}>Excluir</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowDetail(null)}>Fechar</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

@@ -1,56 +1,46 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useCallback, useContext } from 'react'
 import { supabase } from '../lib/salaoSupabaseClient'
 import { AuthContext } from '../contexts/AuthContext'
 
-export function useClientes() {
+// Hook genérico de CRUD contra uma tabela Supabase, isolado por user_id (RLS).
+export function useSupabaseCollection(table, { orderBy = 'created_at', ascending = false } = {}) {
   const { user } = useContext(AuthContext)
-  const [clientes, setClientes] = useState([])
+  const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    if (user) {
-      fetchClientes()
-    }
-  }, [user])
-
-  async function fetchClientes() {
+  const fetchItems = useCallback(async () => {
+    if (!user) return
     try {
       setLoading(true)
       setError(null)
-
       const { data, error: err } = await supabase
-        .from('clientes')
+        .from(table)
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
+        .order(orderBy, { ascending })
       if (err) throw err
-      setClientes(data ?? [])
+      setItems(data ?? [])
     } catch (err) {
       setError(err.message)
-      console.error('Error fetching clientes:', err)
+      console.error(`Error fetching ${table}:`, err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, table, orderBy, ascending])
 
-  async function createCliente(cliente) {
+  useEffect(() => {
+    if (user) fetchItems()
+  }, [user, fetchItems])
+
+  async function add(item) {
     try {
       const { data, error: err } = await supabase
-        .from('clientes')
-        .insert([{
-          ...cliente,
-          user_id: user.id
-        }])
+        .from(table)
+        .insert([{ ...item, user_id: user.id }])
         .select()
-
       if (err) throw err
-
-      if (data && data.length > 0) {
-        setClientes([data[0], ...clientes])
-      }
-
+      if (data && data.length > 0) setItems(prev => [data[0], ...prev])
       return { data: data?.[0], error: null }
     } catch (err) {
       setError(err.message)
@@ -58,21 +48,16 @@ export function useClientes() {
     }
   }
 
-  async function updateCliente(id, updates) {
+  async function update(id, updates) {
     try {
       const { data, error: err } = await supabase
-        .from('clientes')
+        .from(table)
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
-
       if (err) throw err
-
-      if (data && data.length > 0) {
-        setClientes(clientes.map(c => c.id === id ? data[0] : c))
-      }
-
+      if (data && data.length > 0) setItems(prev => prev.map(i => (i.id === id ? data[0] : i)))
       return { data: data?.[0], error: null }
     } catch (err) {
       setError(err.message)
@@ -80,17 +65,15 @@ export function useClientes() {
     }
   }
 
-  async function deleteCliente(id) {
+  async function remove(id) {
     try {
       const { error: err } = await supabase
-        .from('clientes')
+        .from(table)
         .delete()
         .eq('id', id)
         .eq('user_id', user.id)
-
       if (err) throw err
-
-      setClientes(clientes.filter(c => c.id !== id))
+      setItems(prev => prev.filter(i => i.id !== id))
       return { error: null }
     } catch (err) {
       setError(err.message)
@@ -98,13 +81,5 @@ export function useClientes() {
     }
   }
 
-  return {
-    clientes,
-    loading,
-    error,
-    fetchClientes,
-    createCliente,
-    updateCliente,
-    deleteCliente
-  }
+  return { items, loading, error, fetchItems, add, update, remove }
 }

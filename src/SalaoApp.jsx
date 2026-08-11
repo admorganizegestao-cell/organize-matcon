@@ -1,6 +1,8 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, AuthContext } from './contexts/AuthContext'
 import Layout from './components/Layout'
+import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Agendamento from './pages/Agendamento'
 import Clientes from './pages/Clientes'
@@ -10,12 +12,30 @@ import Servicos from './pages/Servicos'
 import Marketing from './pages/Marketing'
 import NotFound from './pages/NotFound'
 
-export default function SalaoApp() {
+function RequireAuth({ children }) {
+  const { user, loading } = useContext(AuthContext)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] text-sm">
+        Carregando...
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
+
+function AppRoutes() {
   return (
-    <Router>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route element={<RequireAuth><Layout /></RequireAuth>}>
+        <Route path="/" element={<Dashboard />} />
           <Route path="/agendamento" element={<Agendamento />} />
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/profissionais" element={<Profissionais />} />
@@ -34,9 +54,18 @@ export default function SalaoApp() {
           <Route path="/planejamento" element={<div className="p-6"><p className="text-white">Planejamento - Em construção</p></div>} />
           <Route path="/configuracoes" element={<div className="p-6"><p className="text-white">Configurações - Em construção</p></div>} />
 
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  )
+}
+
+export default function SalaoApp() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </Router>
   )
 }
