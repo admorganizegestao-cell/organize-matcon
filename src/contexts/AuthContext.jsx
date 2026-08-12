@@ -41,7 +41,8 @@ export function AuthProvider({ children }) {
         email,
         password,
         options: {
-          data: metadata
+          data: metadata,
+          emailRedirectTo: window.location.origin
         }
       })
       if (err) throw err
@@ -84,7 +85,9 @@ export function AuthProvider({ children }) {
   async function resetPassword(email) {
     try {
       setError(null)
-      const { error: err } = await supabase.auth.resetPasswordForEmail(email)
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+      })
       if (err) throw err
       return { error: null }
     } catch (err) {
