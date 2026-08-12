@@ -21,7 +21,7 @@ export default function Marketing() {
     <div>
       <PageHeader
         title="Marketing"
-        subtitle="Acompanhe o retorno de cada canal de campanha"
+        subtitle="Acompanhe o retorno de cada canal de campanha (dados de exemplo)"
         icon={Megaphone}
         actions={
           <div className="flex gap-2">
@@ -36,6 +36,10 @@ export default function Marketing() {
           </div>
         }
       />
+
+      <div className="mb-6 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 text-sm text-[#F59E0B]">
+        Este módulo ainda usa dados de exemplo — a integração com o banco de dados real está prevista para uma próxima etapa.
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
