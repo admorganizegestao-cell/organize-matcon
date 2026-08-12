@@ -30,10 +30,28 @@ function RequireAuth({ children }) {
   return children
 }
 
+function RedirectIfAuthed({ children }) {
+  const { user, loading } = useContext(AuthContext)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] text-sm">
+        Carregando...
+      </div>
+    )
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />
+  }
+
+  return children
+}
+
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/" element={<Dashboard />} />
           <Route path="/agendamento" element={<Agendamento />} />
